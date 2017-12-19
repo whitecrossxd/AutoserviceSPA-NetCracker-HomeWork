@@ -5,14 +5,19 @@ var state = location.pathname.slice(1) || 'main',
 
     (function($) {
         $(document).ready(function(){
+            $("#loading").fadeIn(500);
             var menuItem = $('.menu').find('li');
             $('.menu').find('li').removeClass('active');
             $.ajax({
             url: "/blocks/"+state+".html",
             dataType: "html",
             success: function(data) {
-                $("#content").html(data);
+                $("#content").html(data).slideDown(500);
                 $("."+state).addClass('active');
+                $('html, body').animate({
+                    scrollTop: $("."+state).offset().top
+                }, 3000);
+                $("#loading").fadeOut(500);
             },
             error: function(xhr) {
                 console.log(xhr.responseText);
@@ -21,6 +26,7 @@ var state = location.pathname.slice(1) || 'main',
 
         $('.menu li').click(function(){
             $("#loading").fadeIn(500);
+            $("#content").slideUp(500);
             menuItem.removeClass('active');
             console.log(this.className)
             state = this.className;
@@ -29,9 +35,12 @@ var state = location.pathname.slice(1) || 'main',
                 url: "/blocks/"+state+".html",
                 dataType: "html",
                 success: function(data) {
-                    $("#content").html(data);
-                    $("#loading").fadeOut(500);
+                    $("#content").html(data).slideDown(500);
                     history.pushState(state,"Autocervice","/"+state);
+                    $('html, body').animate({
+                        scrollTop: $("."+state).offset().top
+                    }, 3000);
+                    $("#loading").fadeOut(500);
                     console.log(history);
                 },
                 error: function(xhr) {
@@ -42,6 +51,7 @@ var state = location.pathname.slice(1) || 'main',
 
         addEventListener("popstate",function(e){
             $("#loading").fadeIn(500);
+            $("#content").slideUp(500);
             menuItem.removeClass('active');
             state = history.state || 'main';
             $("."+state).addClass('active');
@@ -49,7 +59,10 @@ var state = location.pathname.slice(1) || 'main',
                 url: "/blocks/"+state+".html",
                 dataType: "html",
                 success: function(data) {
-                    $("#content").html(data);
+                    $("#content").html(data).slideDown(500);
+                    $('html, body').animate({
+                        scrollTop: $("."+state).offset().top
+                    }, 3000);
                     $("#loading").fadeOut(500);
                     console.log(history);
                 },

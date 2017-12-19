@@ -187,6 +187,9 @@ ul{list-style-type: none;}
     background-color: rgba(0, 0, 0, 0.175);
 }
 /* index.html */
+#content{
+    display: none;
+}
 .nav{
     width: 100%;
     /* background: linear-gradient(#2424248a, #5534348a, #2424248a, transparent) ; */
@@ -379,6 +382,14 @@ ul{list-style-type: none;}
     bottom: 0px;
     border-top: 1px solid #353535;
     color: rgb(209, 47, 34);
+}
+.white-section{
+    background: #ffffff;
+    padding: 25px 0;
+    color: black;
+}
+.white-section p{
+    font-size: 19px;
 }
 /* main.html */
 /* preloader */
