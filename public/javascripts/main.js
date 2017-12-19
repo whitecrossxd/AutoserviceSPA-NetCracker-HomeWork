@@ -3,16 +3,16 @@ var state = location.pathname.slice(1) || 'main',
     idleState = false, // состояние отсутствия
     idleWait = 30000; // время ожидания в мс. (1/1000 секунды)
 
-(function($) {
-    $(document).ready(function(){
-        
-        $.ajax({
+    (function($) {
+        $(document).ready(function(){
+            var menuItem = $('.menu').find('li');
+            $('.menu').find('li').removeClass('active');
+            $.ajax({
             url: "/blocks/"+state+".html",
             dataType: "html",
             success: function(data) {
                 $("#content").html(data);
-                $('.menu').find('li').removeClass('active');
-                $("#"+state).addClass('active');
+                $("."+state).addClass('active');
             },
             error: function(xhr) {
                 console.log(xhr.responseText);
@@ -21,9 +21,10 @@ var state = location.pathname.slice(1) || 'main',
 
         $('.menu li').click(function(){
             $("#loading").fadeIn(500);
-            $('.menu').find('li').removeClass('active');
-            $(this).addClass('active');
-            state = this.id;
+            menuItem.removeClass('active');
+            console.log(this.className)
+            state = this.className;
+            $("."+state).addClass('active');
             $.ajax({
                 url: "/blocks/"+state+".html",
                 dataType: "html",
@@ -41,9 +42,9 @@ var state = location.pathname.slice(1) || 'main',
 
         addEventListener("popstate",function(e){
             $("#loading").fadeIn(500);
-            $('.menu').find('li').removeClass('active');
+            menuItem.removeClass('active');
             state = history.state || 'main';
-            $("#"+state).addClass('active');
+            $("."+state).addClass('active');
             $.ajax({
                 url: "/blocks/"+state+".html",
                 dataType: "html",
