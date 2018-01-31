@@ -56,6 +56,9 @@ app.post('/getResource', function (req, res, next) {
     next();
 });
 // App states
+app.get('/', function(req,res){
+    res.sendfile(__dirname + '/public/index.html');
+});
 app.get('/main', function(req,res){
     res.sendfile(__dirname + '/public/index.html');
 });
@@ -72,8 +75,8 @@ app.get('/partners', function(req,res){
     res.sendfile(__dirname + '/public/index.html');
 });
 
-app.listen(8080, function () {
-    console.log('Listening on port 8080...');
+app.listen(3000, function () {
+    console.log('Listening on port 3000...');
 });
 
 module.exports = app;
