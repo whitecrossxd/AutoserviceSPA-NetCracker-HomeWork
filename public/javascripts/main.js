@@ -1,13 +1,12 @@
 var idleTimer = null,
     idleState = false, // состояние отсутствия
-    idleWait = 30000; // время ожидания в мс. (1/1000 секунды)
+    idleWait = 30000, // время ожидания в мс. (1/1000 секунды)
+    slideNow = 1,
+    translateWidth = 0,
+    slideInterval = 3500,
+    slideCount;
 
 (function ($) {
-
-    var slideNow = 1,
-        translateWidth = 0,
-        slideInterval = 5000,
-        slideCount;
 
     var Validation = {
         init: function () {
@@ -97,6 +96,7 @@ var idleTimer = null,
                     redrawCallback: function (data) {
                         $("#content").html(data).fadeIn();
                         $("#loading").fadeOut(500);
+                        slider.init();
                         console.log(history);
                     }
                 },
@@ -135,8 +135,67 @@ var idleTimer = null,
 
                         });
                     }
-                }
+                },
+                
             }
+        }
+    };
+    var slider = {
+        init: function (){
+            this.handlers();
+            this.sliderInterval();
+        },
+        sliderInterval: function () {
+            switchInterval = setInterval(this.nextSlide, slideInterval);            
+        },
+        handlers: function (){
+            this.next = $('#next-btn');
+            this.next.click(this.nextSlide);
+            this.prev = $('#prev-btn');
+            this.prev.click(this.prevSlide);            
+            this.port = $('#viewport');
+            this.port.mouseover(this.hoverOn);
+            this.port.mouseout(this.hoverOut);
+        },
+        nextSlide: function (){
+            slideCount = $('#slidewrapper').children().length;
+            if (slideNow == slideCount || slideNow <= 0 || slideNow > slideCount) {
+                $('#slidewrapper').css('transform', 'translate(0, 0)');
+                slideNow = 1;
+            } else {
+                translateWidth = -$('#viewport').width() * (slideNow);
+                $('#slidewrapper').css({
+                    'transform': 'translate(' + translateWidth + 'px, 0)',
+                    '-webkit-transform': 'translate(' + translateWidth + 'px, 0)',
+                    '-ms-transform': 'translate(' + translateWidth + 'px, 0)',
+                });
+                slideNow++;
+            }
+        },
+        prevSlide: function (){
+            if (slideNow == 1 || slideNow <= 0 || slideNow > slideCount) {
+                translateWidth = -$('#viewport').width() * (slideCount - 1);
+                $('#slidewrapper').css({
+                    'transform': 'translate(' + translateWidth + 'px, 0)',
+                    '-webkit-transform': 'translate(' + translateWidth + 'px, 0)',
+                    '-ms-transform': 'translate(' + translateWidth + 'px, 0)',
+                });
+                slideNow = slideCount;
+            } else {
+                translateWidth = -$('#viewport').width() * (slideNow - 2);
+                $('#slidewrapper').css({
+                    'transform': 'translate(' + translateWidth + 'px, 0)',
+                    '-webkit-transform': 'translate(' + translateWidth + 'px, 0)',
+                    '-ms-transform': 'translate(' + translateWidth + 'px, 0)',
+                });
+                slideNow--;
+            }
+        },
+        hoverOn: function () {
+            clearInterval(switchInterval);
+        },
+        hoverOut: function () {
+            slider.sliderInterval();
         }
     };
     
@@ -144,7 +203,6 @@ var idleTimer = null,
     $(document).ready(function () {
         AppView.init();
         Navigation.init();
-        // var switchInterval = setInterval(nextSlide, slideInterval);
 
         
         // $.ajax({
