@@ -1,7 +1,4 @@
-var idleTimer = null,
-    idleState = false, // состояние отсутствия
-    idleWait = 30000, // время ожидания в мс. (1/1000 секунды)
-    slideNow = 1,
+var slideNow = 1,
     translateWidth = 0,
     slideInterval = 3500,
     slideCount;
@@ -13,7 +10,12 @@ var idleTimer = null,
 
         },
         validate: function (data) {
-            return true;
+            var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+            if (re.test(String(data.email).toLowerCase()) && data.name !== "" && data.lastname != "") {
+                return true;
+            }else{
+                return false;
+            }
         }
     };
 
@@ -22,7 +24,6 @@ var idleTimer = null,
             this.content = $(".main-part").find("#content");
             $("#loading").fadeIn(500);
             var menuItem = $('.menu').find('li');
-            $('.menu').find('li').removeClass('active');
         },
         redraw: function (redrawData) {
             var data = redrawData.data;
@@ -32,8 +33,8 @@ var idleTimer = null,
                 _this.content.html(data);
                 _this.content.fadeIn(function () {
                     if (successCallback != undefined) {
-                        successCallback(data);
                         $("#loading").fadeOut(500);
+                        successCallback();
                     }
                 });
             });
@@ -44,6 +45,7 @@ var idleTimer = null,
         init: function () {
             this.createHandlers();
             this.checkURL();
+            this.browserArrowsControler();
         },
         checkURL: function () {
             var resource = document.location.pathname;
@@ -52,24 +54,37 @@ var idleTimer = null,
             }
             this.navigationStep.processRequest(resource, Navigation.wizard.getPageByResource(resource).redrawCallback);
         },
+        browserArrowsControler: function(){
+            addEventListener("popstate", function (e) {
+                Navigation.checkURL();
+            }, false);
+        },
         createHandlers: function () {
-            this.mainElement = $(".main-part");
+            this.mainElement = $("body");
             this.navigation = this.mainElement.find(".menu");
             this.navElements = this.navigation.find("li");
             this.navElements.click(this.navigationStep.handleClick);
         },
         navigationStep: {
             handleClick: function (event) {
+                if (document.location.pathname == "/main" || document.location.pathname == "/") {
+                    slider.clearInterval();
+                }
+                $("#loading").fadeIn(500);
                 var resource = "/" + $(this).attr("location");
+                $('.menu').find('li').removeClass('active');
+                $('[location=' + resource.slice(1) + ']').addClass("active");
                 history.pushState(resource, "Autocervice", resource);
                 Navigation.navigationStep.processRequest(resource, Navigation.wizard.getPageByResource(resource).redrawCallback);
             },
             processRequest: function (resource, successCallback) {
+                $('.menu').find('li').removeClass('active');
                 $.ajax({
                     dataType: "html",
                     url: "/blocks" + resource + ".html",
                     success: function (data) {
                         AppView.redraw({ data: data, successCallback: successCallback });
+                        $('[location=' + resource.slice(1) + ']').addClass("active");
                     },
                     error: function (xhr) {
                         alert("Not OK");
@@ -95,9 +110,20 @@ var idleTimer = null,
                     resource: "/main",
                     redrawCallback: function (data) {
                         $("#content").html(data).fadeIn();
-                        $("#loading").fadeOut(500);
+                        var li = $(".main").find(".service-item");
+                        li.hover(function () {
+                            $(this).next(".service-item-text").fadeIn();
+                        }, function () {
+                            $(this).next(".service-item-text").fadeOut();
+                        })
                         slider.init();
-                        console.log(history);
+                    }
+                },
+                about: {
+                    name: "/about",
+                    resource: "/about",
+                    redrawCallback: function (data) {
+                        $("#content").html(data).fadeIn();
                     }
                 },
                 clientForm: {
@@ -107,9 +133,13 @@ var idleTimer = null,
                         var clientForm = $("#clientForm");
                         clientForm.find("input[type='submit']").click(function (event) {
                             event.preventDefault();
+                            var error = $(".error"),
+                                success = $(".success"),
+                                header = $("<h2>");
                             var formData = {};
                             clientForm.serializeArray().map(function (x) { formData[x.name] = x.value; });
-                            // if (Validation.validate(formData)) {
+                            var backToMain = "/main";
+                            if (Validation.validate(formData)) {
                                 $.ajax({
                                     url: "/getResource",
                                     dataType: "json",
@@ -117,23 +147,40 @@ var idleTimer = null,
                                     data: JSON.stringify(formData),
                                     contentType: "application/json",
                                     success: function (responseData) {
-                                        var div = $("<div>");
-                                        var header = $("<h2>");
-                                        header.text(responseData.text);
+                                        header.text("Ваша заявка успешно отправлена!");
                                         var datefield = $("<div>");
-                                        datefield.text(responseData.date);
-                                        var status = $("<div>");
-                                        status.text(responseData.status);
-                                        div.append(header).append(datefield).append(status);
-                                        $("#content").append(div);
+                                        datefield.text(responseData.carmodel);
+                                        success.append(header).append(datefield);
+                                        $("#content").html(success);
                                     },
                                     error: function (xhr) {
                                         console.log(xhr.responseText);
                                     }
                                 });
-                            // }
-
+                            }else if(formData.email == "" || formData.name =="" || formData.lastname == "") {
+                                header.text("Заполните поля: Имя, Фамилия и Email!");
+                                error.html(header);
+                                $("#clientForm").append(error);
+                            }else{
+                                header.text("Email указан не верно!");
+                                error.html(header);
+                                $("#clientForm").append(error);
+                            }
                         });
+                    }
+                },
+                works: {
+                    name: "/works",
+                    resource: "/works",
+                    redrawCallback: function (data) {
+                        $("#content").html(data).fadeIn();
+                    }
+                },
+                partners: {
+                    name: "/partners",
+                    resource: "/partners",
+                    redrawCallback: function (data) {
+                        $("#content").html(data).fadeIn();
                     }
                 },
                 
@@ -145,8 +192,11 @@ var idleTimer = null,
             this.handlers();
             this.sliderInterval();
         },
+        clearInterval: function (){
+            clearInterval(switchInterval);
+        },
         sliderInterval: function () {
-            switchInterval = setInterval(this.nextSlide, slideInterval);            
+            switchInterval = setInterval(this.nextSlide, slideInterval);          
         },
         handlers: function (){
             this.next = $('#next-btn');
@@ -199,152 +249,9 @@ var idleTimer = null,
         }
     };
     
-
     $(document).ready(function () {
         AppView.init();
         Navigation.init();
-
-        
-        // $.ajax({
-        //     url: "/blocks/" + state + ".html",
-        //     dataType: "html",
-        //     success: function (data) {
-        //         $("#content").html(data).fadeIn();
-        //         $("." + state).addClass('active');
-        //         $("#loading").fadeOut(500);
-        //         $('#viewport').hover(function () {
-        //             clearInterval(switchInterval);
-        //         }, function () {
-        //             switchInterval = setInterval(nextSlide, slideInterval);
-        //         });
-        //         $('#next-btn').click(function() {
-        //             nextSlide();
-        //         });
-            
-        //         $('#prev-btn').click(function() {
-        //             prevSlide();
-        //         });
-        //     },
-        //     error: function (xhr) {
-        //         console.log(xhr.responseText);
-        //     }
-        // });
-
-        // slider
-        // function nextSlide() {
-        //     slideCount = $('#slidewrapper').children().length;
-        //     if (slideNow == slideCount || slideNow <= 0 || slideNow > slideCount) {
-        //         $('#slidewrapper').css('transform', 'translate(0, 0)');
-        //         slideNow = 1;
-        //     } else {
-        //         translateWidth = -$('#viewport').width() * (slideNow);
-        //         $('#slidewrapper').css({
-        //             'transform': 'translate(' + translateWidth + 'px, 0)',
-        //             '-webkit-transform': 'translate(' + translateWidth + 'px, 0)',
-        //             '-ms-transform': 'translate(' + translateWidth + 'px, 0)',
-        //         });
-        //         slideNow++;
-        //     }
-        // };
-        // function prevSlide() {
-        //     if (slideNow == 1 || slideNow <= 0 || slideNow > slideCount) {
-        //         translateWidth = -$('#viewport').width() * (slideCount - 1);
-        //         $('#slidewrapper').css({
-        //             'transform': 'translate(' + translateWidth + 'px, 0)',
-        //             '-webkit-transform': 'translate(' + translateWidth + 'px, 0)',
-        //             '-ms-transform': 'translate(' + translateWidth + 'px, 0)',
-        //         });
-        //         slideNow = slideCount;
-        //     } else {
-        //         translateWidth = -$('#viewport').width() * (slideNow - 2);
-        //         $('#slidewrapper').css({
-        //             'transform': 'translate(' + translateWidth + 'px, 0)',
-        //             '-webkit-transform': 'translate(' + translateWidth + 'px, 0)',
-        //             '-ms-transform': 'translate(' + translateWidth + 'px, 0)',
-        //         });
-        //         slideNow--;
-        //     }
-        // };
-
-        // $('.menu li').click(function () {
-        //     $("#loading").fadeIn(500);
-        //     $("#content").fadeOut();
-        //     menuItem.removeClass('active');
-        //     console.log(this.className)
-        //     state = this.className;
-        //     $("." + state).addClass('active');
-        //     $.ajax({
-        //         url: "/blocks/" + state + ".html",
-        //         dataType: "html",
-        //         success: function (data) {
-        //             $("#content").html(data).fadeIn();
-        //             history.pushState(state, "Autocervice", "/" + state);
-        //             $("#loading").fadeOut(500);
-        //             console.log(history);
-        //         },
-        //         error: function (xhr) {
-        //             console.log(xhr.responseText);
-        //         }
-        //     });
-        // });
-
-        // addEventListener("popstate", function (e) {
-        //     $("#loading").fadeIn(500);
-        //     $("#content").fadeOut(500);
-        //     menuItem.removeClass('active');
-        //     state = history.state || 'main';
-        //     $("." + state).addClass('active');
-        //     $.ajax({
-        //         url: "/blocks/" + state + ".html",
-        //         dataType: "html",
-        //         success: function (data) {
-        //             $("#content").html(data).fadeIn(500);
-        //             $("#loading").fadeOut(500);
-        //             console.log(history);
-        //         },
-        //         error: function (xhr) {
-        //             console.log(xhr.responseText);
-        //         }
-        //     });
-        // }, false);
-
-        // $('body').on('submit', 'form#clientForm', function (e) {
-        //     e.preventDefault();
-        //     var data = {};
-        //     $(this).serializeArray().map(function (x) { data[x.name] = x.value; });
-        //     $.ajax({
-        //         url: "/getResource",
-        //         dataType: "json",
-        //         type: "post",
-        //         data: JSON.stringify(data),
-        //         contentType: "application/json",
-        //         success: function (data) {
-        //             console.log(data);
-        //         },
-        //         error: function (xhr) {
-        //             console.log(xhr.responseText);
-        //         }
-        //     });
-        // });
-
-        // $(document).bind('mousemove keydown scroll', function () {
-        //     clearTimeout(idleTimer); // отменяем прежний временной отрезок
-        //     // if(idleState == true){ 
-        //     //   // Действия на возвращение пользователя
-        //     //    $("body").append("<p>С возвращением!</p>");
-        //     // }
-
-        //     idleState = false;
-        //     idleTimer = setTimeout(function () {
-        //         // Действия на отсутствие пользователя
-        //         //   alert("Купи это");
-        //         idleState = true;
-        //     }, idleWait);
-        // });
-
-        // $("body").trigger("mousemove"); // сгенерируем ложное событие, для запуска скрипта
-
-        
     });
 
 
